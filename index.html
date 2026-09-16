@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <title>LEMONタスク管理</title>
+
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      padding: 24px;
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Helvetica Neue",
+        "Yu Gothic",
+        sans-serif;
+      background: #f5f6f8;
+      color: #222;
+    }
+
+    .card {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 1px 5px rgba(0,0,0,.08);
+    }
+
+    h2 {
+      margin-top: 0;
+    }
+
+    .ok {
+      color: #087a39;
+      font-weight: bold;
+    }
+
+    .error {
+      color: #c62828;
+      font-weight: bold;
+    }
+
+    #detail {
+      margin-top: 16px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="card">
+
+    <h2>LEMONタスク管理</h2>
+
+    <p>LINE MINI App 接続テスト</p>
+
+    <div id="status">
+      LIFF初期化中...
+    </div>
+
+    <div id="detail"></div>
+
+  </div>
+
+
+  <script>
+
+    const LIFF_ID = '2011625016-RaUEIe98';
+
+
+    async function main() {
+
+      const status =
+        document.getElementById('status');
+
+      const detail =
+        document.getElementById('detail');
+
+
+      try {
+
+        await liff.init({
+          liffId: LIFF_ID
+        });
+
+
+        status.className = 'ok';
+
+        status.textContent =
+          '✅ LIFF初期化成功';
+
+
+        detail.textContent =
+          'LINEアプリ内：' +
+          liff.isInClient() +
+          '\n' +
+          'ログイン状態：' +
+          liff.isLoggedIn() +
+          '\n' +
+          'OS：' +
+          liff.getOS();
+
+      } catch (err) {
+
+        status.className = 'error';
+
+        status.textContent =
+          '❌ LIFF初期化失敗';
+
+
+        detail.textContent =
+          'code: ' +
+          (err.code || '') +
+          '\n\nmessage: ' +
+          (err.message || String(err));
+
+        console.error(err);
+
+      }
+
+    }
+
+
+    main();
+
+  </script>
+
+</body>
+</html>
