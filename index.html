@@ -102,7 +102,21 @@
     サーバー認証テスト
   </p>
 
+  <div class="row">
 
+    <div class="label">
+      社内ユーザー
+    </div>
+
+    <div
+      id="internalUser"
+      class="value"
+    >
+      -
+    </div>
+
+  </div>
+  
   <div class="row">
 
     <div class="label">
@@ -314,6 +328,12 @@ async function main() {
       '✅ LINE本人確認成功'
     );
 
+    document
+      .getElementById(
+        'internalUser'
+      )
+      .textContent =
+      result.user.name;
 
     document
       .getElementById(
