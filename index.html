@@ -25,47 +25,60 @@
         "Helvetica Neue",
         "Yu Gothic",
         sans-serif;
+
       background: #f5f6f8;
       color: #222;
     }
+
 
     .card {
       max-width: 600px;
       margin: 0 auto;
       padding: 20px;
-      background: #fff;
+      background: white;
       border-radius: 14px;
-      box-shadow: 0 1px 5px rgba(0,0,0,.08);
+
+      box-shadow:
+        0 1px 5px
+        rgba(0,0,0,.08);
     }
+
 
     h2 {
       margin-top: 0;
     }
 
+
     .row {
-      padding: 11px 0;
-      border-bottom: 1px solid #eee;
+      padding: 12px 0;
+      border-bottom:
+        1px solid #eee;
     }
+
 
     .row:last-child {
       border-bottom: 0;
     }
 
+
     .label {
       font-size: 12px;
       color: #777;
-      margin-bottom: 4px;
+      margin-bottom: 5px;
     }
+
 
     .value {
       font-size: 15px;
       word-break: break-all;
     }
 
+
     .ok {
       color: #087a39;
       font-weight: bold;
     }
+
 
     .error {
       color: #c62828;
@@ -76,13 +89,18 @@
 
 </head>
 
+
 <body>
 
 <div class="card">
 
-  <h2>LEMONタスク管理</h2>
+  <h2>
+    LEMONタスク管理
+  </h2>
 
-  <p>LINEユーザー識別テスト</p>
+  <p>
+    サーバー認証テスト
+  </p>
 
 
   <div class="row">
@@ -96,54 +114,6 @@
       class="value"
     >
       初期化中...
-    </div>
-
-  </div>
-
-
-  <div class="row">
-
-    <div class="label">
-      LINEログイン
-    </div>
-
-    <div
-      id="loginStatus"
-      class="value"
-    >
-      -
-    </div>
-
-  </div>
-
-
-  <div class="row">
-
-    <div class="label">
-      表示名
-    </div>
-
-    <div
-      id="displayName"
-      class="value"
-    >
-      -
-    </div>
-
-  </div>
-
-
-  <div class="row">
-
-    <div class="label">
-      LINEユーザーID
-    </div>
-
-    <div
-      id="userId"
-      class="value"
-    >
-      -
     </div>
 
   </div>
@@ -168,11 +138,43 @@
   <div class="row">
 
     <div class="label">
-      実行環境
+      Cloudflare Worker
     </div>
 
     <div
-      id="environment"
+      id="workerStatus"
+      class="value"
+    >
+      -
+    </div>
+
+  </div>
+
+
+  <div class="row">
+
+    <div class="label">
+      LINE本人確認
+    </div>
+
+    <div
+      id="authStatus"
+      class="value"
+    >
+      -
+    </div>
+
+  </div>
+
+
+  <div class="row">
+
+    <div class="label">
+      LINE UID
+    </div>
+
+    <div
+      id="userId"
       class="value"
     >
       -
@@ -190,6 +192,10 @@ const LIFF_ID =
   '2011625016-RaUEIe98';
 
 
+const WORKER_URL =
+  'https://lemon-task-api.hr-c62.workers.dev/';
+
+
 async function main() {
 
   try {
@@ -202,55 +208,29 @@ async function main() {
     });
 
 
-    document
-      .getElementById('liffStatus')
-      .textContent =
-      '✅ 初期化成功';
-
-
-    document
-      .getElementById('liffStatus')
-      .className =
-      'value ok';
+    setSuccess(
+      'liffStatus',
+      '✅ 初期化成功'
+    );
 
 
     /*
-     * ログイン状態
+     * LINEログイン確認
      */
-    const loggedIn =
-      liff.isLoggedIn();
-
-
-    document
-      .getElementById('loginStatus')
-      .textContent =
-      loggedIn
-        ? '✅ ログイン済み'
-        : '❌ 未ログイン';
-
-
-    if (!loggedIn) {
+    if (!liff.isLoggedIn()) {
 
       throw new Error(
-        'LINEログインされていません。'
+        'LINEにログインされていません。'
       );
 
     }
 
 
     /*
-     * IDトークン
+     * IDトークン取得
      */
     const idToken =
       liff.getIDToken();
-
-
-    document
-      .getElementById('tokenStatus')
-      .textContent =
-      idToken
-        ? '✅ 取得成功'
-        : '❌ 取得できません';
 
 
     if (!idToken) {
@@ -262,98 +242,131 @@ async function main() {
     }
 
 
+    setSuccess(
+      'tokenStatus',
+      '✅ 取得成功'
+    );
+
+
     /*
-     * IDトークンの内容を
-     * 画面表示用として取得
+     * Workerへ送信
      */
-    const decoded =
-      liff.getDecodedIDToken();
+    document
+      .getElementById(
+        'workerStatus'
+      )
+      .textContent =
+      '接続中...';
 
 
-    if (!decoded) {
+    const response =
+      await fetch(
+        WORKER_URL,
+        {
+          method: 'POST',
+
+          headers: {
+            'Content-Type':
+              'application/json'
+          },
+
+          body:
+            JSON.stringify({
+              idToken:
+                idToken
+            })
+        }
+      );
+
+
+    const result =
+      await response.json();
+
+
+    if (!response.ok) {
 
       throw new Error(
-        'ユーザー情報を取得できませんでした。'
+        result.message ||
+        'Workerでエラーが発生しました。'
       );
 
     }
 
 
-    /*
-     * 表示名
-     */
-    document
-      .getElementById('displayName')
-      .textContent =
-      decoded.name || '(取得なし)';
+    setSuccess(
+      'workerStatus',
+      '✅ 接続成功'
+    );
 
 
-    /*
-     * LINE UID
-     *
-     * テスト画面なので一部マスク
-     */
-    document
-      .getElementById('userId')
-      .textContent =
-      maskUserId(
-        decoded.sub
+    if (!result.ok) {
+
+      throw new Error(
+        result.message ||
+        'LINE認証に失敗しました。'
       );
 
+    }
 
-    /*
-     * 環境
-     */
+
+    setSuccess(
+      'authStatus',
+      '✅ LINE本人確認成功'
+    );
+
+
     document
-      .getElementById('environment')
+      .getElementById(
+        'userId'
+      )
       .textContent =
-      'LINE内：' +
-      liff.isInClient() +
-      ' / OS：' +
-      liff.getOS();
+      result.userIdMasked;
 
 
-  } catch (err) {
+  } catch (error) {
 
-    document
-      .getElementById('liffStatus')
-      .textContent =
-      '❌ エラー：' +
-      (err.message || String(err));
+    console.error(error);
 
 
     document
-      .getElementById('liffStatus')
+      .getElementById(
+        'authStatus'
+      )
       .className =
       'value error';
 
 
-    console.error(err);
+    document
+      .getElementById(
+        'authStatus'
+      )
+      .textContent =
+      '❌ ' +
+      (
+        error.message ||
+        String(error)
+      );
 
   }
 
 }
 
 
-function maskUserId(userId) {
+function setSuccess(
+  id,
+  text
+) {
 
-  if (!userId) {
-    return '(取得なし)';
-  }
-
-
-  if (userId.length < 12) {
-    return userId;
-  }
+  const el =
+    document.getElementById(id);
 
 
-  return (
-    userId.substring(0, 6) +
-    '***************' +
-    userId.substring(
-      userId.length - 5
-    )
-  );
+  el.className =
+    'value ok';
+
+
+  el.textContent =
+    text;
 
 }
 
