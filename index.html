@@ -7,7 +7,7 @@
 
   <meta
     name="viewport"
-    content="width=device-width, initial-scale=1"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
   >
 
   <title>LEMONタスク管理</title>
@@ -16,132 +16,219 @@
 
   <style>
 
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
-      padding: 24px;
+      background: #f5f6f8;
+      color: #222;
       font-family:
         -apple-system,
         BlinkMacSystemFont,
         "Helvetica Neue",
         "Yu Gothic",
         sans-serif;
-
-      background: #f5f6f8;
-      color: #222;
     }
 
+    .container {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 18px 16px 40px;
+    }
+
+    h1 {
+      font-size: 23px;
+      margin: 0;
+    }
+
+    .subtitle {
+      color: #777;
+      font-size: 13px;
+      margin-top: 4px;
+      margin-bottom: 18px;
+    }
 
     .card {
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 20px;
-      background: white;
+      background: #fff;
       border-radius: 14px;
-
+      padding: 18px;
+      margin-bottom: 14px;
       box-shadow:
-        0 1px 5px
-        rgba(0,0,0,.08);
+        0 1px 5px rgba(0,0,0,.06);
     }
 
-
-    h2 {
-      margin-top: 0;
-    }
-
-
-    .row {
-      padding: 12px 0;
-      border-bottom:
-        1px solid #eee;
-    }
-
-
-    .row:last-child {
-      border-bottom: 0;
-    }
-
-
-    .label {
+    .requester-label {
       font-size: 12px;
       color: #777;
-      margin-bottom: 5px;
     }
 
-
-    .value {
-      font-size: 15px;
-      word-break: break-all;
+    .requester-name {
+      font-size: 18px;
+      font-weight: 700;
+      margin-top: 3px;
     }
 
-
-    .ok {
-      color: #087a39;
-      font-weight: bold;
+    .field {
+      margin-bottom: 20px;
     }
 
+    .field:last-child {
+      margin-bottom: 0;
+    }
+
+    .field-label {
+      display: block;
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .required {
+      font-size: 11px;
+      color: #d93025;
+      margin-left: 5px;
+    }
+
+    input[type="text"],
+    input[type="date"],
+    select,
+    textarea {
+      width: 100%;
+      border: 1px solid #d9dde3;
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 16px;
+      background: #fff;
+    }
+
+    textarea {
+      min-height: 110px;
+      resize: vertical;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      outline: none;
+      border-color: #06c755;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 8px;
+    }
+
+    .chip {
+      border: 1px solid #d9dde3;
+      background: #fff;
+      padding: 7px 11px;
+      border-radius: 999px;
+      font-size: 13px;
+    }
+
+    .option-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .option-row {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      border: 1px solid #e1e4e8;
+      border-radius: 10px;
+      padding: 11px;
+      background: #fff;
+    }
+
+    .option-row input {
+      width: 20px;
+      height: 20px;
+      flex: none;
+    }
+
+    .button {
+      width: 100%;
+      border: 0;
+      border-radius: 11px;
+      padding: 14px;
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .button-primary {
+      color: #fff;
+      background: #06c755;
+    }
+
+    .loading {
+      position: fixed;
+      inset: 0;
+      z-index: 999;
+      background: rgba(255,255,255,.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .hidden {
+      display: none !important;
+    }
 
     .error {
-      color: #c62828;
-      font-weight: bold;
+      background: #fff0f0;
+      color: #b3261e;
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 14px;
+      white-space: pre-wrap;
     }
 
   </style>
 
 </head>
 
-
 <body>
 
-<div class="card">
 
-  <h2>
+<div
+  id="loading"
+  class="loading"
+>
+  読み込み中...
+</div>
+
+
+<div class="container">
+
+  <h1>
     LEMONタスク管理
-  </h2>
+  </h1>
 
-  <p>
-    サーバー認証テスト
-  </p>
-
-  <div class="row">
-
-    <div class="label">
-      社内ユーザー
-    </div>
-
-    <div
-      id="internalUser"
-      class="value"
-    >
-      -
-    </div>
-
-  </div>
-  
-  <div class="row">
-
-    <div class="label">
-      LIFF
-    </div>
-
-    <div
-      id="liffStatus"
-      class="value"
-    >
-      初期化中...
-    </div>
-
+  <div class="subtitle">
+    新しいタスクを依頼
   </div>
 
 
-  <div class="row">
+  <div
+    id="errorBox"
+    class="error hidden"
+  ></div>
 
-    <div class="label">
-      IDトークン
+
+  <div class="card">
+
+    <div class="requester-label">
+      依頼者
     </div>
 
     <div
-      id="tokenStatus"
-      class="value"
+      id="requesterName"
+      class="requester-name"
     >
       -
     </div>
@@ -149,53 +236,173 @@
   </div>
 
 
-  <div class="row">
+  <div class="card">
 
-    <div class="label">
-      Cloudflare Worker
+    <div class="field">
+
+      <label class="field-label">
+        会社名
+        <span class="required">
+          必須
+        </span>
+      </label>
+
+      <input
+        id="company"
+        type="text"
+        placeholder="会社名を入力"
+      >
+
+      <div
+        id="recentCompanies"
+        class="chips"
+      ></div>
+
     </div>
 
-    <div
-      id="workerStatus"
-      class="value"
-    >
-      -
+
+    <div class="field">
+
+      <label class="field-label">
+        タスク分類
+        <span class="required">
+          必須
+        </span>
+      </label>
+
+      <select
+        id="taskCategory"
+        onchange="updateTaskContents()"
+      >
+
+        <option value="">
+          選択してください
+        </option>
+
+      </select>
+
+    </div>
+
+
+    <div class="field">
+
+      <label class="field-label">
+        タスク内容
+        <span class="required">
+          必須
+        </span>
+      </label>
+
+      <select
+        id="taskContent"
+        disabled
+      >
+
+        <option value="">
+          先にタスク分類を選択
+        </option>
+
+      </select>
+
+    </div>
+
+
+    <div class="field">
+
+      <label class="field-label">
+        タスク詳細
+        <span class="required">
+          必須
+        </span>
+      </label>
+
+      <textarea
+        id="taskDetail"
+        placeholder="具体的な依頼内容を入力"
+      ></textarea>
+
+    </div>
+
+
+    <div class="field">
+
+      <label class="field-label">
+        期限種別
+        <span class="required">
+          必須
+        </span>
+      </label>
+
+      <select id="deadlineType">
+
+        <option value="">
+          選択してください
+        </option>
+
+      </select>
+
+    </div>
+
+
+    <div class="field">
+
+      <label class="field-label">
+        期限日
+        <span class="required">
+          必須
+        </span>
+      </label>
+
+      <input
+        id="deadlineDate"
+        type="date"
+      >
+
+    </div>
+
+
+    <div class="field">
+
+      <label class="field-label">
+        優先度
+        <span class="required">
+          必須
+        </span>
+      </label>
+
+      <div
+        id="priorityList"
+        class="option-list"
+      ></div>
+
+    </div>
+
+
+    <div class="field">
+
+      <label class="field-label">
+        担当者
+        <span class="required">
+          1名以上
+        </span>
+      </label>
+
+      <div
+        id="assigneeList"
+        class="option-list"
+      ></div>
+
     </div>
 
   </div>
 
 
-  <div class="row">
-
-    <div class="label">
-      LINE本人確認
-    </div>
-
-    <div
-      id="authStatus"
-      class="value"
-    >
-      -
-    </div>
-
-  </div>
-
-
-  <div class="row">
-
-    <div class="label">
-      LINE UID
-    </div>
-
-    <div
-      id="userId"
-      class="value"
-    >
-      -
-    </div>
-
-  </div>
-
+  <button
+    class="button button-primary"
+    onclick="checkForm()"
+  >
+    確認する
+  </button>
 
 </div>
 
@@ -207,30 +414,26 @@ const LIFF_ID =
 
 
 const WORKER_URL =
-  'https://lemon-task-api.hr-c62.workers.dev/';
+  'ここをあなたのWorker URLに変更';
 
 
+let initialData = null;
+
+
+/*
+ * ============================================
+ * 起動
+ * ============================================
+ */
 async function main() {
 
   try {
 
-    /*
-     * LIFF初期化
-     */
     await liff.init({
       liffId: LIFF_ID
     });
 
 
-    setSuccess(
-      'liffStatus',
-      '✅ 初期化成功'
-    );
-
-
-    /*
-     * LINEログイン確認
-     */
     if (!liff.isLoggedIn()) {
 
       throw new Error(
@@ -240,9 +443,6 @@ async function main() {
     }
 
 
-    /*
-     * IDトークン取得
-     */
     const idToken =
       liff.getIDToken();
 
@@ -250,27 +450,10 @@ async function main() {
     if (!idToken) {
 
       throw new Error(
-        'IDトークンを取得できませんでした。'
+        'IDトークンを取得できません。'
       );
 
     }
-
-
-    setSuccess(
-      'tokenStatus',
-      '✅ 取得成功'
-    );
-
-
-    /*
-     * Workerへ送信
-     */
-    document
-      .getElementById(
-        'workerStatus'
-      )
-      .textContent =
-      '接続中...';
 
 
     const response =
@@ -286,6 +469,9 @@ async function main() {
 
           body:
             JSON.stringify({
+              action:
+                'initialData',
+
               idToken:
                 idToken
             })
@@ -297,74 +483,49 @@ async function main() {
       await response.json();
 
 
-    if (!response.ok) {
+    if (
+      !response.ok ||
+      !result.ok
+    ) {
 
       throw new Error(
         result.message ||
-        'Workerでエラーが発生しました。'
+        '初期データ取得に失敗しました。'
       );
 
     }
 
 
-    setSuccess(
-      'workerStatus',
-      '✅ 接続成功'
-    );
+    initialData =
+      result;
 
 
-    if (!result.ok) {
+    renderScreen();
 
-      throw new Error(
-        result.message ||
-        'LINE認証に失敗しました。'
+
+    document
+      .getElementById(
+        'loading'
+      )
+      .classList.add(
+        'hidden'
       );
 
-    }
 
+  } catch (err) {
 
-    setSuccess(
-      'authStatus',
-      '✅ LINE本人確認成功'
+    showError(
+      err.message ||
+      String(err)
     );
 
-    document
-      .getElementById(
-        'internalUser'
-      )
-      .textContent =
-      result.user.name;
 
     document
       .getElementById(
-        'userId'
+        'loading'
       )
-      .textContent =
-      result.userIdMasked;
-
-
-  } catch (error) {
-
-    console.error(error);
-
-
-    document
-      .getElementById(
-        'authStatus'
-      )
-      .className =
-      'value error';
-
-
-    document
-      .getElementById(
-        'authStatus'
-      )
-      .textContent =
-      '❌ ' +
-      (
-        error.message ||
-        String(error)
+      .classList.add(
+        'hidden'
       );
 
   }
@@ -372,21 +533,668 @@ async function main() {
 }
 
 
-function setSuccess(
-  id,
-  text
-) {
+/*
+ * ============================================
+ * 表示
+ * ============================================
+ */
+function renderScreen() {
 
-  const el =
-    document.getElementById(id);
+  document
+    .getElementById(
+      'requesterName'
+    )
+    .textContent =
+    initialData.user.name;
 
 
-  el.className =
-    'value ok';
+  renderRecentCompanies();
 
 
-  el.textContent =
-    text;
+  renderCategories();
+
+
+  renderDeadlineTypes();
+
+
+  renderPriorities();
+
+
+  renderAssignees();
+
+
+  setDefaultDate();
+
+}
+
+
+/*
+ * 最近の会社
+ */
+function renderRecentCompanies() {
+
+  const box =
+    document.getElementById(
+      'recentCompanies'
+    );
+
+
+  box.innerHTML = '';
+
+
+  (
+    initialData.recentCompanies ||
+    []
+  )
+  .forEach(
+    function(company) {
+
+      const button =
+        document.createElement(
+          'button'
+        );
+
+
+      button.type =
+        'button';
+
+
+      button.className =
+        'chip';
+
+
+      button.textContent =
+        company;
+
+
+      button.onclick =
+        function() {
+
+          document
+            .getElementById(
+              'company'
+            )
+            .value =
+            company;
+
+        };
+
+
+      box.appendChild(
+        button
+      );
+
+    }
+  );
+
+}
+
+
+/*
+ * タスク分類
+ */
+function renderCategories() {
+
+  const select =
+    document.getElementById(
+      'taskCategory'
+    );
+
+
+  Object
+    .keys(
+      initialData.categories ||
+      {}
+    )
+    .forEach(
+      function(category) {
+
+        const option =
+          document.createElement(
+            'option'
+          );
+
+
+        option.value =
+          category;
+
+
+        option.textContent =
+          category;
+
+
+        select.appendChild(
+          option
+        );
+
+      }
+    );
+
+}
+
+
+/*
+ * タスク内容
+ */
+function updateTaskContents() {
+
+  const category =
+    document
+      .getElementById(
+        'taskCategory'
+      )
+      .value;
+
+
+  const select =
+    document.getElementById(
+      'taskContent'
+    );
+
+
+  select.innerHTML = '';
+
+
+  if (
+    !category ||
+    !initialData.categories[
+      category
+    ]
+  ) {
+
+    select.disabled =
+      true;
+
+
+    const option =
+      document.createElement(
+        'option'
+      );
+
+
+    option.value = '';
+
+
+    option.textContent =
+      '先にタスク分類を選択';
+
+
+    select.appendChild(
+      option
+    );
+
+
+    return;
+
+  }
+
+
+  select.disabled =
+    false;
+
+
+  const first =
+    document.createElement(
+      'option'
+    );
+
+
+  first.value = '';
+
+
+  first.textContent =
+    '選択してください';
+
+
+  select.appendChild(
+    first
+  );
+
+
+  initialData
+    .categories[
+      category
+    ]
+    .forEach(
+      function(item) {
+
+        const option =
+          document.createElement(
+            'option'
+          );
+
+
+        option.value =
+          item;
+
+
+        option.textContent =
+          item;
+
+
+        select.appendChild(
+          option
+        );
+
+      }
+    );
+
+}
+
+
+/*
+ * 期限種別
+ */
+function renderDeadlineTypes() {
+
+  const select =
+    document.getElementById(
+      'deadlineType'
+    );
+
+
+  initialData
+    .deadlineTypes
+    .forEach(
+      function(item) {
+
+        const option =
+          document.createElement(
+            'option'
+          );
+
+
+        option.value =
+          item;
+
+
+        option.textContent =
+          item;
+
+
+        select.appendChild(
+          option
+        );
+
+      }
+    );
+
+}
+
+
+/*
+ * 優先度
+ */
+function renderPriorities() {
+
+  const box =
+    document.getElementById(
+      'priorityList'
+    );
+
+
+  initialData
+    .priorities
+    .forEach(
+      function(item) {
+
+        const label =
+          document.createElement(
+            'label'
+          );
+
+
+        label.className =
+          'option-row';
+
+
+        const input =
+          document.createElement(
+            'input'
+          );
+
+
+        input.type =
+          'radio';
+
+
+        input.name =
+          'priority';
+
+
+        input.value =
+          item;
+
+
+        const text =
+          document.createElement(
+            'span'
+          );
+
+
+        text.textContent =
+          item;
+
+
+        label.appendChild(
+          input
+        );
+
+
+        label.appendChild(
+          text
+        );
+
+
+        box.appendChild(
+          label
+        );
+
+      }
+    );
+
+}
+
+
+/*
+ * 担当者
+ */
+function renderAssignees() {
+
+  const box =
+    document.getElementById(
+      'assigneeList'
+    );
+
+
+  initialData
+    .assignees
+    .forEach(
+      function(user) {
+
+        const label =
+          document.createElement(
+            'label'
+          );
+
+
+        label.className =
+          'option-row';
+
+
+        const input =
+          document.createElement(
+            'input'
+          );
+
+
+        input.type =
+          'checkbox';
+
+
+        input.name =
+          'assignee';
+
+
+        input.value =
+          user.uid;
+
+
+        const text =
+          document.createElement(
+            'span'
+          );
+
+
+        text.textContent =
+          user.name;
+
+
+        label.appendChild(
+          input
+        );
+
+
+        label.appendChild(
+          text
+        );
+
+
+        box.appendChild(
+          label
+        );
+
+      }
+    );
+
+}
+
+
+/*
+ * 日付
+ */
+function setDefaultDate() {
+
+  const today =
+    new Date();
+
+
+  const yyyy =
+    today.getFullYear();
+
+
+  const mm =
+    String(
+      today.getMonth() + 1
+    )
+    .padStart(
+      2,
+      '0'
+    );
+
+
+  const dd =
+    String(
+      today.getDate()
+    )
+    .padStart(
+      2,
+      '0'
+    );
+
+
+  document
+    .getElementById(
+      'deadlineDate'
+    )
+    .value =
+    `${yyyy}-${mm}-${dd}`;
+
+}
+
+
+/*
+ * ============================================
+ * 入力確認
+ *
+ * 今回はまだ登録しない
+ * ============================================
+ */
+function checkForm() {
+
+  clearError();
+
+
+  const company =
+    document
+      .getElementById(
+        'company'
+      )
+      .value
+      .trim();
+
+
+  const category =
+    document
+      .getElementById(
+        'taskCategory'
+      )
+      .value;
+
+
+  const content =
+    document
+      .getElementById(
+        'taskContent'
+      )
+      .value;
+
+
+  const detail =
+    document
+      .getElementById(
+        'taskDetail'
+      )
+      .value
+      .trim();
+
+
+  const deadlineType =
+    document
+      .getElementById(
+        'deadlineType'
+      )
+      .value;
+
+
+  const deadlineDate =
+    document
+      .getElementById(
+        'deadlineDate'
+      )
+      .value;
+
+
+  const priority =
+    document.querySelector(
+      'input[name="priority"]:checked'
+    );
+
+
+  const assignees =
+    document.querySelectorAll(
+      'input[name="assignee"]:checked'
+    );
+
+
+  if (!company) {
+    return showError(
+      '会社名を入力してください。'
+    );
+  }
+
+
+  if (!category) {
+    return showError(
+      'タスク分類を選択してください。'
+    );
+  }
+
+
+  if (!content) {
+    return showError(
+      'タスク内容を選択してください。'
+    );
+  }
+
+
+  if (!detail) {
+    return showError(
+      'タスク詳細を入力してください。'
+    );
+  }
+
+
+  if (!deadlineType) {
+    return showError(
+      '期限種別を選択してください。'
+    );
+  }
+
+
+  if (!deadlineDate) {
+    return showError(
+      '期限日を選択してください。'
+    );
+  }
+
+
+  if (!priority) {
+    return showError(
+      '優先度を選択してください。'
+    );
+  }
+
+
+  if (
+    assignees.length === 0
+  ) {
+    return showError(
+      '担当者を1名以上選択してください。'
+    );
+  }
+
+
+  alert(
+    '入力内容の確認OKです。\n\n' +
+    '次の工程で確認画面と登録処理を接続します。'
+  );
+
+}
+
+
+/*
+ * エラー
+ */
+function showError(message) {
+
+  const box =
+    document.getElementById(
+      'errorBox'
+    );
+
+
+  box.textContent =
+    message;
+
+
+  box.classList.remove(
+    'hidden'
+  );
+
+
+  window.scrollTo(
+    0,
+    0
+  );
+
+}
+
+
+function clearError() {
+
+  const box =
+    document.getElementById(
+      'errorBox'
+    );
+
+
+  box.textContent = '';
+
+
+  box.classList.add(
+    'hidden'
+  );
 
 }
 
