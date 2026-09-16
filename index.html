@@ -220,6 +220,7 @@
   ></div>
 
 
+  <div id="inputPanel">
   <div class="card">
 
     <div class="requester-label">
@@ -405,6 +406,20 @@
   </button>
 
 </div>
+<section id="confirmPanel" class="card hidden" aria-labelledby="confirmTitle">
+  <h2 id="confirmTitle">登録内容の確認</h2>
+  <div id="confirmSummary"></div>
+  <button id="registerButton" class="button button-primary" onclick="miniSubmit()">この内容で登録</button>
+  <button id="editButton" class="button" onclick="miniEdit()">修正する</button>
+</section>
+<section id="completePanel" class="card hidden" aria-live="polite">
+  <h2 id="completeTitle"></h2><p id="completeId" style="overflow-wrap:anywhere"></p>
+  <div id="completeList" style="overflow-wrap:anywhere"></div><p id="noticeStatus"></p>
+  <button id="retryButton" class="button button-primary" onclick="miniRetry()">通知状況を再確認</button>
+  <button id="newButton" class="button" onclick="miniNew()">新しいタスクを作る</button>
+</section>
+
+</div>
 
 
 <script>
@@ -501,6 +516,7 @@ async function main() {
 
 
     renderScreen();
+    await miniRestore();
 
 
     document
@@ -1017,13 +1033,13 @@ function setDefaultDate() {
  * ============================================
  * 入力確認
  *
- * 今回はまだ登録しない
+ * 確認画面へ進む
  * ============================================
  */
 function checkForm() {
 
   clearError();
-
+  if (!initialData) return showError('初期データの読み込みを待ってください。');
 
   const company =
     document
@@ -1145,10 +1161,10 @@ function checkForm() {
   }
 
 
-  alert(
-    '入力内容の確認OKです。\n\n' +
-    '次の工程で確認画面と登録処理を接続します。'
-  );
+  if(company.length>200 || detail.length>3000) return showError('会社名は200文字、詳細は3000文字以内です。');
+  if(assignees.length>20) return showError('担当者は20名以内で選択してください。');
+  miniConfirm({company,taskCategory:category,taskContent:content,taskDetail:detail,
+    deadlineType,deadlineDate,priority:priority.value,assigneeUids:Array.from(assignees,x=>x.value)});
 
 }
 
@@ -1198,6 +1214,107 @@ function clearError() {
 
 }
 
+
+const MINI_PENDING_KEY = 'lemon-miniapp-pending-v1';
+let miniPending = null;
+let miniBusy = false;
+function miniStage(stage) {
+  ['inputPanel','confirmPanel','completePanel'].forEach(id=>document.getElementById(id).classList.toggle('hidden',id!==stage));
+  clearError();window.scrollTo(0,0);
+}
+function miniSummary(node, data, names) {
+  node.textContent='';
+  [['会社名',data.company],['タスク内容',data.taskContent],['タスク詳細',data.taskDetail],
+   [data.deadlineType+'期限',data.deadlineDate],['優先度',data.priority],['担当者',names.join('、')]].forEach(([label,value])=>{
+    const p=document.createElement('p');p.textContent=label+'：'+value;p.style.whiteSpace='pre-wrap';node.appendChild(p);
+  });
+}
+async function miniConfirm(data) {
+  if(miniBusy) return;
+  miniBusy=true;
+  try {await miniApi('validateTask',data);}
+  catch(e) {showError(e.message);return;}
+  finally {miniBusy=false;}
+  const names=data.assigneeUids.map(uid=>initialData.assignees.find(u=>u.uid===uid)?.name||'未登録');
+  miniPending={data,names,started:false};
+  miniSummary(document.getElementById('confirmSummary'),data,names);
+  document.getElementById('editButton').disabled=false;
+  miniStage('confirmPanel');
+}
+function miniEdit() {if(!miniBusy && !miniPending.started) miniStage('inputPanel');}
+async function miniApi(action,data) {
+  const idToken=liff.getIDToken();
+  if(!idToken) throw new Error('LINE認証の期限が切れました。画面を開き直してください。');
+  const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),90000);
+  try {
+    const response=await fetch(WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({idToken,action,data}),signal:controller.signal});
+    const result=await response.json();
+    if(!response.ok||!result.ok) throw new Error(result.message||'処理結果を取得できませんでした。');
+    return result;
+  } finally {clearTimeout(timeout);}
+}
+function miniSetBusy(busy) {
+  miniBusy=busy;
+  ['registerButton','retryButton','newButton'].forEach(id=>document.getElementById(id).disabled=busy);
+  document.getElementById('editButton').disabled=busy||!!miniPending?.started;
+  document.getElementById('registerButton').textContent=busy?'登録結果を確認中…':miniPending?.started?'登録結果を再確認':'この内容で登録';
+}
+function miniDone(result) {
+  miniStage('completePanel');
+  document.getElementById('completeTitle').textContent='タスクを登録しました';
+  document.getElementById('completeId').textContent='依頼ID：'+result.requestId;
+  const list=document.getElementById('completeList');list.textContent='';
+  result.tasks.forEach(t=>{const p=document.createElement('p');p.textContent=t.name+'：'+t.taskNo+'\n通知：'+t.notification;p.style.whiteSpace='pre-wrap';list.appendChild(p);});
+  document.getElementById('noticeStatus').textContent=result.notificationsAccepted?
+    '全担当者への通知をLINEが受け付けました。端末への配信・既読を保証する表示ではありません。':
+    '登録は完了していますが、一部の通知は未確認です。「通知状況を再確認」で再試行できます。「要確認」は管理者による確認が必要です。';
+  document.getElementById('retryButton').classList.toggle('hidden',result.notificationsAccepted);
+  // 未確認の通知がある間は登録キーを維持し、新規依頼で上書きしない。
+  document.getElementById('newButton').classList.toggle('hidden',!result.notificationsAccepted);
+}
+async function miniSubmit() {
+  if(miniBusy||!miniPending)return;
+  miniSetBusy(true);clearError();
+  try {
+    if(!miniPending.started) {
+      miniPending.data.registrationKey ||= crypto.randomUUID();
+      miniPending.started=true;
+      // 永続化に失敗した場合はサーバーへ送らない。
+      try {localStorage.setItem(MINI_PENDING_KEY,JSON.stringify(miniPending));}
+      catch(e) {miniPending.started=false;throw new Error('再送用の保存ができません。ブラウザの保存設定を確認してください。');}
+    }
+    miniDone(await miniApi('registerTask',miniPending.data));
+  } catch(e) {
+    showError((e.name==='AbortError'?'応答待ちが長いため中断しました。':e.message)+'\n登録結果が不明な場合は、同じ画面の「登録結果を再確認」を押してください。');
+    // ロックは維持。別の登録キーを発行しない。
+  } finally {miniSetBusy(false);}
+}
+async function miniRetry() {
+  if(miniBusy||!miniPending)return;
+  miniSetBusy(true);clearError();
+  try {
+    const result=await miniApi('resumeRegistration',{registrationKey:miniPending.data.registrationKey});
+    if(result.found) miniDone(result);
+    else {
+      // 元リクエストが未到着でも同じキーなら重複しない。編集は解禁しない。
+      miniStage('confirmPanel');
+      showError('登録記録はまだ確認できません。同じ内容で「登録結果を再確認」を押してください。');
+    }
+  } catch(e) {showError(e.message+'\nこの画面から再確認してください。');}
+  finally {miniSetBusy(false);}
+}
+function miniNew() {
+  if(miniBusy)return;
+  localStorage.removeItem(MINI_PENDING_KEY);location.reload();
+}
+async function miniRestore() {
+  const saved=localStorage.getItem(MINI_PENDING_KEY);
+  if(!saved)return;
+  try {miniPending=JSON.parse(saved);}catch(e){throw new Error('保存された登録情報を読み取れません。管理者へ確認してください。');}
+  miniSummary(document.getElementById('confirmSummary'),miniPending.data,miniPending.names);
+  miniStage('confirmPanel');await miniRetry();
+}
 
 main();
 
