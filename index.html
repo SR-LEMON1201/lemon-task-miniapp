@@ -451,9 +451,8 @@ async function main() {
 
     if (!liff.isLoggedIn()) {
 
-      throw new Error(
-        'LINEにログインされていません。'
-      );
+      liff.login({redirectUri: 'https://sr-lemon1201.github.io/lemon-task-miniapp/'});
+      return;
 
     }
 
