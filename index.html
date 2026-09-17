@@ -415,7 +415,6 @@
 <section id="completePanel" class="card hidden" aria-live="polite">
   <h2 id="completeTitle"></h2><p id="completeId" style="overflow-wrap:anywhere"></p>
   <div id="completeList" style="overflow-wrap:anywhere"></div><p id="noticeStatus"></p>
-  <button id="retryButton" class="button button-primary" onclick="miniRetry()">通知状況を再確認</button>
   <button id="newButton" class="button" onclick="miniNew()">新しいタスクを作る</button>
 </section>
 
@@ -1255,7 +1254,7 @@ async function miniApi(action,data) {
 }
 function miniSetBusy(busy) {
   miniBusy=busy;
-  ['registerButton','retryButton','newButton'].forEach(id=>document.getElementById(id).disabled=busy);
+  ['registerButton','newButton'].forEach(id=>document.getElementById(id).disabled=busy);
   document.getElementById('editButton').disabled=busy||!!miniPending?.started;
   document.getElementById('registerButton').textContent=busy?'登録結果を確認中…':miniPending?.started?'登録結果を再確認':'この内容で登録';
 }
@@ -1267,10 +1266,10 @@ function miniDone(result) {
   result.tasks.forEach(t=>{const p=document.createElement('p');p.textContent=t.name+'：'+t.taskNo+'\n通知：'+t.notification;p.style.whiteSpace='pre-wrap';list.appendChild(p);});
   document.getElementById('noticeStatus').textContent=result.notificationsAccepted?
     '全担当者への通知をLINEが受け付けました。端末への配信・既読を保証する表示ではありません。':
-    '登録は完了していますが、一部の通知は未確認です。「通知状況を再確認」で再試行できます。「要確認」は管理者による確認が必要です。';
-  document.getElementById('retryButton').classList.toggle('hidden',result.notificationsAccepted);
-  // 未確認の通知がある間は登録キーを維持し、新規依頼で上書きしない。
-  document.getElementById('newButton').classList.toggle('hidden',!result.notificationsAccepted);
+    '登録は完了しています。通知の再確認はシステム側で行います。新しいタスクを入力できます。';
+  document.getElementById('newButton').classList.remove('hidden');
+  try{localStorage.removeItem(MINI_PENDING_KEY);}catch(e){}
+  if(result.deleted)document.getElementById('completeTitle').textContent='前回の依頼は登録済みですが、削除されたタスクがあります';
 }
 async function miniSubmit() {
   if(miniBusy||!miniPending)return;
@@ -1294,7 +1293,8 @@ async function miniRetry() {
   miniSetBusy(true);clearError();
   try {
     const result=await miniApi('resumeRegistration',{registrationKey:miniPending.data.registrationKey});
-    if(result.found) miniDone(result);
+    if(result.found && result.registered) miniDone(result);
+    else if(result.inProgress){miniStage('confirmPanel');showError('登録が途中です。同じ内容で再確認してください。');}
     else {
       // 元リクエストが未到着でも同じキーなら重複しない。編集は解禁しない。
       miniStage('confirmPanel');
