@@ -251,8 +251,10 @@
       <input
         id="company"
         type="text"
-        placeholder="会社名を入力"
+        list="companyOptions"
+        placeholder="会社名を入力・選択"
       >
+      <datalist id="companyOptions"></datalist>
 
       <div
         id="recentCompanies"
@@ -563,6 +565,7 @@ function renderScreen() {
 
 
   renderRecentCompanies();
+  renderCompanyOptions();
 
 
   renderCategories();
@@ -647,6 +650,27 @@ function renderRecentCompanies() {
 /*
  * タスク分類
  */
+function renderCompanyOptions() {
+  const list = document.getElementById('companyOptions');
+  const items = initialData.companies || [];
+  if (list) {
+    list.innerHTML = '';
+    ['（会社なし）'].concat(items).forEach(function(name) {
+      const opt = document.createElement('option');
+      opt.value = name;
+      list.appendChild(opt);
+    });
+  }
+  const box = document.getElementById('recentCompanies');
+  if (box) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'chip';
+    b.textContent = '（会社なし）';
+    b.onclick = function() { document.getElementById('company').value = '（会社なし）'; };
+    box.insertBefore(b, box.firstChild);
+  }
+}
 function renderCategories() {
 
   const select =
