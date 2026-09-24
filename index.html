@@ -91,6 +91,12 @@
       margin-left: 5px;
     }
 
+    .optional {
+      font-size: 11px;
+      color: #9aa0a6;
+      margin-left: 5px;
+    }
+
     input[type="text"],
     input[type="date"],
     select,
@@ -397,6 +403,21 @@
 
     </div>
 
+    <div class="field">
+
+      <label class="field-label">
+        報告先
+        <span class="optional">
+          任意
+        </span>
+      </label>
+
+      <select id="reportTo">
+        <option value="">（なし）</option>
+      </select>
+
+    </div>
+
   </div>
 
 
@@ -578,6 +599,7 @@ function renderScreen() {
 
 
   renderAssignees();
+  renderReportTo();
 
 
   setDefaultDate();
@@ -650,6 +672,16 @@ function renderRecentCompanies() {
 /*
  * タスク分類
  */
+function renderReportTo() {
+  const sel = document.getElementById('reportTo');
+  if (!sel) return;
+  (initialData.assignees || []).forEach(function(user) {
+    const o = document.createElement('option');
+    o.value = user.name;
+    o.textContent = user.name;
+    sel.appendChild(o);
+  });
+}
 function renderCompanyOptions() {
   const list = document.getElementById('companyOptions');
   const items = initialData.companies || [];
@@ -1186,7 +1218,7 @@ function checkForm() {
   if(company.length>200 || detail.length>3000) return showError('会社名は200文字、詳細は3000文字以内です。');
   if(assignees.length>20) return showError('担当者は20名以内で選択してください。');
   miniConfirm({company,taskCategory:category,taskContent:content,taskDetail:detail,
-    deadlineType,deadlineDate,priority:priority.value,assigneeUids:Array.from(assignees,x=>x.value)});
+    deadlineType,deadlineDate,priority:priority.value,reportTo:document.getElementById('reportTo').value,assigneeUids:Array.from(assignees,x=>x.value)});
 
 }
 
@@ -1247,7 +1279,7 @@ function miniStage(stage) {
 function miniSummary(node, data, names) {
   node.textContent='';
   [['会社名',data.company],['タスク内容',data.taskContent],['タスク詳細',data.taskDetail],
-   [data.deadlineType+'期限',data.deadlineDate],['優先度',data.priority],['担当者',names.join('、')]].forEach(([label,value])=>{
+   [data.deadlineType+'期限',data.deadlineDate],['優先度',data.priority],['担当者',names.join('、')],['報告先',data.reportTo||'（なし）']].forEach(([label,value])=>{
     const p=document.createElement('p');p.textContent=label+'：'+value;p.style.whiteSpace='pre-wrap';node.appendChild(p);
   });
 }
