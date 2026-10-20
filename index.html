@@ -456,6 +456,25 @@ const WORKER_URL =
 
 let initialData = null;
 
+/* パソコン（ブラウザ）で開いたとき：保存されたLINEログインの期限が切れていたら、自動でログインし直す */
+const LEMON_REDIRECT = 'https://sr-lemon1201.github.io/lemon-task-miniapp/';
+function lemonTokenExpired() {
+  try { const d = liff.getDecodedIDToken(); return !d || !d.exp || d.exp * 1000 < Date.now() + 60000; }
+  catch (e) { return true; }
+}
+function lemonRelogin() {
+  // ブラウザで開いたときだけ。2分以内に一度やり直していたら、繰り返さない（無限ループ防止）
+  if (liff.isInClient()) return false;
+  try {
+    const last = Number(localStorage.getItem('lemonReloginAt') || 0);
+    if (Date.now() - last < 120000) return false;
+    localStorage.setItem('lemonReloginAt', String(Date.now()));
+  } catch (e) {}
+  try { liff.logout(); } catch (e) {}
+  liff.login({ redirectUri: LEMON_REDIRECT });
+  return true;
+}
+
 
 /*
  * ============================================
@@ -473,10 +492,13 @@ async function main() {
 
     if (!liff.isLoggedIn()) {
 
-      liff.login({redirectUri: 'https://sr-lemon1201.github.io/lemon-task-miniapp/'});
+      liff.login({redirectUri: LEMON_REDIRECT});
       return;
 
     }
+
+    // 保存されていたログインの期限切れ → ログインし直す
+    if (!liff.isInClient() && lemonTokenExpired() && lemonRelogin()) return;
 
 
     const idToken =
@@ -518,6 +540,14 @@ async function main() {
     const result =
       await response.json();
 
+    // LINEの本人確認に失敗（期限切れなど）→ ブラウザならログインし直す
+    if (response.status === 401 && lemonRelogin()) return;
+    if (response.status === 401) {
+      throw new Error(liff.isInClient()
+        ? 'LINE本人確認に失敗しました。この画面を閉じて、LINEのメニューから開き直してください。'
+        : 'LINE本人確認に失敗しました。ブラウザのこのページを閉じて開き直してください。直らないときは、シークレットウィンドウで開くか、このサイトのCookie（サイトデータ）を削除してください。');
+    }
+
 
     if (
       !response.ok ||
@@ -534,6 +564,7 @@ async function main() {
 
     initialData =
       result;
+    try { localStorage.removeItem('lemonReloginAt'); } catch (e) {}
 
 
     renderScreen();
@@ -1298,7 +1329,7 @@ async function miniConfirm(data) {
 function miniEdit() {if(!miniBusy && !miniPending.started) miniStage('inputPanel');}
 async function miniApi(action,data) {
   const idToken=liff.getIDToken();
-  if(!idToken) throw new Error('LINE認証の期限が切れました。画面を開き直してください。');
+  if(!idToken || (!liff.isInClient() && lemonTokenExpired())) throw new Error('LINEログインの期限が切れました。ページを再読み込みしてください（自動でログインし直します）。');
   const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),90000);
   try {
     const response=await fetch(WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},
