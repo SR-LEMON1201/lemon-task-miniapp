@@ -274,9 +274,6 @@
 
       <label class="field-label">
         タスク分類
-        <span class="required">
-          必須
-        </span>
       </label>
 
       <select
@@ -297,9 +294,6 @@
 
       <label class="field-label">
         タスク内容
-        <span class="required">
-          必須
-        </span>
       </label>
 
       <select
@@ -1191,20 +1185,6 @@ function checkForm() {
   if (!company) {
     return showError(
       '会社名を入力してください。'
-    );
-  }
-
-
-  if (!category) {
-    return showError(
-      'タスク分類を選択してください。'
-    );
-  }
-
-
-  if (!content) {
-    return showError(
-      'タスク内容を選択してください。'
     );
   }
 
